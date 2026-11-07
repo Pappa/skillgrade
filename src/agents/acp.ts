@@ -8,6 +8,7 @@
  * @see https://agentclientprotocol.com/
  */
 import { spawn, ChildProcess } from 'child_process';
+import { Readable, Writable } from 'node:stream';
 import { BaseAgent, CommandResult } from '../types';
 import * as acp from '@agentclientprotocol/sdk';
 
@@ -120,9 +121,9 @@ export class AcpAgent extends BaseAgent {
             throw new Error('Failed to create stdio streams for ACP process');
         }
 
-        // Create the ACP stream from stdio (output → child stdin, input ← child stdout)
-        const stdinWeb = this.process.stdin as unknown as WritableStream<Uint8Array>;
-        const stdoutWeb = this.process.stdout as unknown as ReadableStream<Uint8Array>;
+        // ndJsonStream expects Web Streams; convert Node child_process stdio (see ACP SDK client example)
+        const stdinWeb = Writable.toWeb(this.process.stdin);
+        const stdoutWeb = Readable.toWeb(this.process.stdout);
         const stream = acp.ndJsonStream(stdinWeb, stdoutWeb);
 
         // Create client handler
