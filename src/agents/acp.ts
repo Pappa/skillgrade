@@ -120,18 +120,16 @@ export class AcpAgent extends BaseAgent {
             throw new Error('Failed to create stdio streams for ACP process');
         }
 
-        // Create the ACP stream from stdio
-        // Convert Node.js streams to Web streams
-        const stdoutWeb = this.process.stdout as unknown as WritableStream;
-        const stdinWeb = this.process.stdin as unknown as ReadableStream<Uint8Array>;
-        const stream = acp.ndJsonStream(stdoutWeb, stdinWeb);
+        // Create the ACP stream from stdio (output → child stdin, input ← child stdout)
+        const stdinWeb = this.process.stdin as unknown as WritableStream<Uint8Array>;
+        const stdoutWeb = this.process.stdout as unknown as ReadableStream<Uint8Array>;
+        const stream = acp.ndJsonStream(stdinWeb, stdoutWeb);
 
         // Create client handler
         const clientHandler = this.createClientHandler();
 
-        // Create client-side connection
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.connection = new acp.ClientSideConnection(clientHandler as any, stream);
+        // SDK expects a factory (agent) => Client, not a bare handler object
+        this.connection = new acp.ClientSideConnection(() => clientHandler, stream);
 
         // Initialize the connection
         const initResponse = await this.withTimeout(
