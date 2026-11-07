@@ -154,7 +154,9 @@ export class DockerProvider implements EnvironmentProvider {
 
         return new Promise<Buffer>((resolve, reject) => {
             const chunks: Buffer[] = [];
-            pack.on('data', (chunk: Buffer) => chunks.push(chunk));
+            pack.on('data', (chunk: unknown) => {
+                chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array));
+            });
             pack.on('end', () => resolve(Buffer.concat(chunks)));
             pack.on('error', reject);
         });
